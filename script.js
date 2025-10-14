@@ -1,7 +1,8 @@
 // ===================== Thai Weather & Accident Risk =====================
 
 // 🔹 แปลงชื่อจังหวัดไทย → อังกฤษ (WeatherAPI)
-const provinceMap = { "กรุงเทพมหานคร": "Bangkok", "กระบี่": "Krabi", "กาญจนบุรี": "Kanchanaburi", "กาฬสินธุ์": "Kalasin",
+const provinceMap = {
+  "กรุงเทพมหานคร": "Bangkok", "กระบี่": "Krabi", "กาญจนบุรี": "Kanchanaburi", "กาฬสินธุ์": "Kalasin",
   "กำแพงเพชร": "Kamphaeng Phet", "ขอนแก่น": "Khon Kaen", "จันทบุรี": "Chanthaburi", "ฉะเชิงเทรา": "Chachoengsao",
   "ชลบุรี": "Chon Buri", "ชัยนาท": "Chai Nat", "ชัยภูมิ": "Chaiyaphum", "ชุมพร": "Chumphon",
   "เชียงราย": "Chiang Rai", "เชียงใหม่": "Chiang Mai", "ตรัง": "Trang", "ตราด": "Trat",
@@ -20,7 +21,8 @@ const provinceMap = { "กรุงเทพมหานคร": "Bangkok", "ก
   "สมุทรสาคร": "Samut Sakhon", "สระแก้ว": "Sa Kaeo", "สระบุรี": "Saraburi", "สิงห์บุรี": "Sing Buri",
   "สุโขทัย": "Sukhothai", "สุพรรณบุรี": "Suphan Buri", "สุราษฎร์ธานี": "Surat Thani", "สุรินทร์": "Surin",
   "หนองคาย": "Nong Khai", "หนองบัวลำภู": "Nong Bua Lam Phu", "อ่างทอง": "Ang Thong", "อำนาจเจริญ": "Amnat Charoen",
-  "อุดรธานี": "Udon Thani", "อุตรดิตถ์": "Uttaradit", "อุทัยธานี": "Uthai Thani", "อุบลราชธานี": "Ubon Ratchathani"};
+  "อุดรธานี": "Udon Thani", "อุตรดิตถ์": "Uttaradit", "อุทัยธานี": "Uthai Thani", "อุบลราชธานี": "Ubon Ratchathani"
+};
 
 // 🔸 ตัวแปร global
 let accidentData = {};
@@ -130,6 +132,9 @@ async function getData() {
     html += `</table><br><small>🕓 ข้อมูลจาก WeatherAPI + DDC (อัปเดตทุกวัน ~02:00 น.)</small>`;
     output.innerHTML = html;
 
+    // ✅ โหลดข่าวท้องถิ่นของจังหวัดนั้น
+    await loadLocalNews(provinceTH);
+
   } catch (err) {
     console.error(err);
     output.innerHTML = `❌ เกิดข้อผิดพลาด: ${err.message}`;
@@ -139,6 +144,26 @@ async function getData() {
 
 function riskColor(level) {
   return { very_high: "red", high: "darkorange", medium: "goldenrod", low: "green" }[level];
+}
+
+// ===================== ดึงข่าวท้องถิ่น =====================
+async function loadLocalNews(provinceTH) {
+  const newsBox = document.getElementById("news");
+  if (!newsBox) return;
+  newsBox.innerHTML = "📰 กำลังโหลดข่าว...";
+  try {
+    const res = await fetch(`http://127.0.0.1:5000/news/${provinceTH}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    newsBox.innerHTML = data.map(n => `
+      <div style="margin-bottom:10px">
+        <a href="${n.link}" target="_blank" style="font-weight:bold;color:#2563eb">${n.title}</a>
+        <p>${n.summary}</p>
+      </div>`).join("") || "ไม่มีข่าวล่าสุด";
+  } catch (err) {
+    newsBox.innerHTML = `❌ ไม่สามารถโหลดข่าวได้ (${err.message})`;
+  }
 }
 
 window.onload = loadAccidentData;

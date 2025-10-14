@@ -1,11 +1,11 @@
 # ===============================================
-# app.py — Flask API สำหรับรวมข้อมูลอุบัติเหตุรายปี/เดือน
-# และให้ frontend เรียกใช้งานผ่าน /accident_data
+# app.py — Flask API สำหรับข้อมูลอุบัติเหตุ + ข่าวท้องถิ่น
 # ===============================================
 from flask import Flask, jsonify
 from flask_cors import CORS
 import pandas as pd
 import time, os, re
+from fetch_news import fetch_local_news  # ✅ เพิ่มส่วนเชื่อมข่าว
 
 app = Flask(__name__)
 CORS(app)
@@ -161,10 +161,24 @@ def accident_data():
 
 
 # ==========================
+# 📰 ดึงข่าวท้องถิ่น
+# ==========================
+@app.route("/news/<province>")
+def news(province):
+    """ดึงข่าวท้องถิ่นของจังหวัดนั้น ๆ"""
+    try:
+        news_data = fetch_local_news(province)
+        return jsonify(news_data)
+    except Exception as e:
+        print("❌ Error (news):", e)
+        return jsonify({"error": str(e)}), 500
+
+
+# ==========================
 # 🚀 Run Flask
 # ==========================
 if __name__ == "__main__":
-    print("🚀 Flask server started (Yearly + Monthly + Risk Level)")
+    print("🚀 Flask server started (Yearly + Monthly + News)")
     try:
         preview = fetch_accident_data()
         print(f"\n✅ ตัวอย่างจังหวัด 3 แรก:")

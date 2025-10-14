@@ -2,14 +2,23 @@
 <html lang="th">
 <head>
   <meta charset="utf-8" />
-  <title>ระบบแนะนำจังหวัดปลอดภัยจากฝนและอุบัติเหตุ</title>
-  <script src="script.js" defer></script>
+  <title>🌦️ ระบบแนะนำจังหวัดปลอดภัยจากฝนและอุบัติเหตุ 🚗</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
 </head>
-<body style="font-family:sans-serif;text-align:center;background:#f8fafc">
+<body>
   <h2>🌦️ ระบบแนะนำจังหวัดปลอดภัยจากฝนและอุบัติเหตุ 🚗</h2>
-  <input id="province" placeholder="พิมพ์ชื่อจังหวัด เช่น ชลบุรี, เชียงใหม่" />
-  <button onclick="getData()">ดูข้อมูล</button>
-  <div id="result" style="margin-top:20px;padding:20px;"></div>
+
+  <div style="margin-top:20px;">
+    <input id="province" placeholder="พิมพ์ชื่อจังหวัด เช่น ชลบุรี, เชียงใหม่" />
+    <button onclick="getData()">ดูข้อมูล</button>
+  </div>
+
+  <div id="result"></div>
+
+  <hr style="margin-top:30px;margin-bottom:10px;">
+
+  <h3>🗞️ ข่าวท้องถิ่นล่าสุด</h3>
+  <div id="news" style="text-align:left;display:inline-block;max-width:700px;margin-top:10px;"></div>
 </body>
 </html>
