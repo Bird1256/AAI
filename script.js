@@ -1,4 +1,6 @@
-// ===================== Thai Weather & Accident Risk =====================
+// ======================================================
+// 🌦️ script.js — ระบบแนะนำจังหวัดปลอดภัยจากฝนและอุบัติเหตุ (Full Thai Version)
+// ======================================================
 
 // 🔹 แปลงชื่อจังหวัดไทย → อังกฤษ (WeatherAPI)
 const provinceMap = {
@@ -32,6 +34,49 @@ function normalizeProvince(name) {
   return name ? name.replace(/จังหวัด/g, "").replace(/จ\./g, "").replace(/\s+/g, "").trim() : "";
 }
 
+// ======================================================
+// 🌦️ ฟังก์ชันแปลสภาพอากาศเป็นภาษาไทย (ครอบคลุม WeatherAPI ทั้งหมด)
+// ======================================================
+function translateWeatherCondition(cond) {
+  const map = {
+    "Sunny": "แดดจ้า ☀️", "Clear": "อากาศแจ่มใส 🌤️",
+    "Partly cloudy": "มีเมฆบางส่วน ⛅", "Cloudy": "มีเมฆมาก ☁️", "Overcast": "ท้องฟ้ามืดครึ้ม 🌥️",
+
+    "Patchy rain possible": "อาจมีฝนบางพื้นที่ 🌦️", "Patchy light rain": "มีฝนโปรยบางพื้นที่ 🌦️",
+    "Light rain": "ฝนตกเล็กน้อย 🌦️", "Light rain shower": "ฝนตกปรอยๆ 🌧️",
+    "Patchy light drizzle": "ฝนละอองเบาๆ 🌦️", "Moderate rain": "ฝนปานกลาง 🌧️",
+    "Heavy rain": "ฝนตกหนัก ⛈️", "Torrential rain shower": "ฝนตกหนักมาก ⛈️",
+    "Patchy rain nearby": "มีฝนบริเวณใกล้เคียง 🌦️", "Patchy moderate rain nearby": "ฝนปานกลางบริเวณใกล้เคียง 🌧️",
+    "Moderate or heavy rain shower": "ฝนตกหนักบางพื้นที่ ⛈️", "Moderate or heavy rain with thunder": "ฝนตกหนักและมีฟ้าคะนอง ⛈️",
+    "Patchy light rain with thunder": "มีฝนฟ้าคะนองประปราย ⛈️", "Thundery outbreaks possible": "อาจมีฟ้าคะนอง 🌩️",
+    "Thunderstorm": "พายุฝนฟ้าคะนอง ⛈️",
+
+    "Fog": "มีหมอกหนา 🌫️", "Mist": "มีหมอกจางๆ 🌫️", "Freezing fog": "หมอกน้ำแข็ง 🌫️❄️",
+    "Light snow": "หิมะตกเล็กน้อย ❄️", "Moderate snow": "หิมะตกปานกลาง ❄️", "Heavy snow": "หิมะตกหนัก ❄️",
+    "Ice pellets": "ลูกเห็บตก ❄️", "Patchy sleet possible": "อาจมีฝนลูกเห็บบางพื้นที่ ❄️",
+    "Blizzard": "พายุหิมะ 🌨️", "Tornado": "พายุหมุน 🌪️", "Unknown": "ไม่ทราบสภาพอากาศ ❔"
+  };
+
+  // รองรับข้อความผสม
+  for (const key in map) {
+    if (cond.toLowerCase().includes(key.toLowerCase())) {
+      return map[key];
+    }
+  }
+  return cond;
+}
+
+// 🔹 ฟังก์ชันช่วยแปลระดับความเสี่ยง
+function translateRisk(level) {
+  const map = {
+    "very_high": "เสี่ยงสูงมาก ⚠️",
+    "high": "เสี่ยงสูง ⚠",
+    "medium": "ปานกลาง 🟡",
+    "low": "ต่ำ 🟢"
+  };
+  return map[level] || level;
+}
+
 // 🔹 โหลดข้อมูลอุบัติเหตุจาก Flask
 async function loadAccidentData() {
   try {
@@ -46,7 +91,9 @@ async function loadAccidentData() {
   }
 }
 
-// ===================== ดึงข้อมูลสภาพอากาศ + คำนวณความเสี่ยง =====================
+// ======================================================
+// 🎯 ฟังก์ชันหลัก: แสดงข้อมูลจังหวัด
+// ======================================================
 async function getData() {
   const inputRaw = document.getElementById("province").value.trim();
   const provinceTH = normalizeProvince(inputRaw);
@@ -93,11 +140,21 @@ async function getData() {
     else if (todayRainChance > 30 || diffPercent > 0) totalRisk = "medium";
 
     const bgColor = { low: "#dcfce7", medium: "#fef9c3", high: "#fed7aa", very_high: "#fecaca" }[totalRisk];
-    const rainBar = `
-      <div style="background:#e5e7eb;border-radius:8px;overflow:hidden;height:10px;margin-top:4px;">
-        <div style="width:${todayRainChance}%;height:100%;
-                    background:${todayRainChance>80?'#2563eb':todayRainChance>50?'#60a5fa':'#93c5fd'};
-                    transition:width 0.5s;"></div>
+    const riskLabel = translateRisk(totalRisk);
+    const weatherTH = translateWeatherCondition(condition.text);
+
+    // 🔸 แถบแสดงระดับความเสี่ยง (Bar)
+    const riskBarColors = {
+      "low": "#22c55e",
+      "medium": "#eab308",
+      "high": "#f97316",
+      "very_high": "#ef4444"
+    };
+    const riskBar = `
+      <div style="background:#e5e7eb;border-radius:8px;overflow:hidden;height:14px;margin-top:8px;">
+        <div style="width:${totalRisk === 'very_high' ? 100 : totalRisk === 'high' ? 75 : totalRisk === 'medium' ? 50 : 25}%;
+                    height:100%;background:${riskBarColors[totalRisk]};
+                    transition:width 0.6s;"></div>
       </div>`;
 
     output.style.background = bgColor;
@@ -107,33 +164,58 @@ async function getData() {
     output.style.textAlign = "left";
 
     let html = `
+      <div style="background:linear-gradient(90deg,#1e3a8a,#3b82f6);color:white;padding:14px;border-radius:12px;margin-bottom:16px;">
+        🧭 <b>สรุปสถานการณ์วันนี้:</b> ${weatherTH} — ${riskLabel}
+        ${riskBar}
+      </div>
+
       <h2>📍 จังหวัด ${inputRaw}</h2>
-      <p>⛅ สภาพอากาศ: ${condition.text}</p>
+      <p>⛅ สภาพอากาศ: ${weatherTH}</p>
       <p>🌡️ อุณหภูมิ: ${temp_c} °C &nbsp; 💧 ความชื้น: ${humidity}%</p>
       <p>🌧️ ปริมาณฝนล่าสุด: ${precip_mm} มม.</p>
       <p>🌧️ ความน่าจะเป็นฝนตกวันนี้: <b>${todayRainChance}%</b></p>
-      ${rainBar}
       <p>🚧 ผู้เสียชีวิตเดือนนี้ (${currentMonth}): ${monthValue.toLocaleString()} คน</p>
       <p>📈 เทียบค่าเฉลี่ย: ${diffLabel} (${diffPercent.toFixed(1)}%)</p>
       <p>☠️ ยอดรวมรายปี: ${total.toLocaleString()} คน</p>
-      <h3>🔥 ความเสี่ยงรวม: <b style="color:${riskColor(totalRisk)}">${totalRisk.toUpperCase()}</b></h3>
+      <h3>🔥 ความเสี่ยงรวม: <b style="color:${riskColor(totalRisk)}">${riskLabel}</b></h3>
       <hr><h3>📆 พยากรณ์อากาศ 3 วันข้างหน้า</h3>
-      <table style="width:100%;border-collapse:collapse">
-        <tr style="background:#e2e8f0">
-          <th>วันที่</th><th>สภาพอากาศ</th><th>🌡️ สูงสุด-ต่ำสุด (°C)</th><th>💧 ฝน (%)</th>
-        </tr>`;
+      <table>
+        <tr><th>วันที่</th><th>สภาพอากาศ</th><th>🌡️ สูงสุด-ต่ำสุด (°C)</th><th>💧 ฝน (%)</th></tr>`;
+
     forecast.forEach(f => {
-      html += `<tr style="border-top:1px solid #ccc">
+      html += `<tr>
         <td>${f.date}</td>
-        <td>${f.day.condition.text}</td>
+        <td>${translateWeatherCondition(f.day.condition.text)}</td>
         <td>${f.day.maxtemp_c} / ${f.day.mintemp_c}</td>
         <td>${f.day.daily_chance_of_rain}%</td></tr>`;
     });
-    html += `</table><br><small>🕓 ข้อมูลจาก WeatherAPI + DDC (อัปเดตทุกวัน ~02:00 น.)</small>`;
-    output.innerHTML = html;
+    html += `</table>`;
 
-    // ✅ โหลดข่าวท้องถิ่นของจังหวัดนั้น
-    await loadLocalNews(provinceTH);
+    // 📰 ข่าวท้องถิ่น
+    try {
+      const newsRes = await fetch(`http://127.0.0.1:5000/news/${encodeURIComponent(provinceTH)}`);
+      const newsData = await newsRes.json();
+      if (!newsData.error && newsData.length > 0) {
+        html += `<hr><h3>📰 ข่าวล่าสุดเกี่ยวกับ ${inputRaw}</h3>
+        <div id="news-section" style="display:grid;gap:12px;">`;
+        newsData.forEach(n => {
+          html += `
+            <div class="news-card">
+              <a href="${n.link}" target="_blank" class="news-title">${n.title}</a>
+              <p class="news-summary">${n.summary}</p>
+              <a href="${n.link}" target="_blank" class="news-readmore">อ่านต่อ ›</a>
+            </div>`;
+        });
+        html += `</div>`;
+      } else {
+        html += `<p>ไม่มีข่าวสำคัญล่าสุดเกี่ยวกับจังหวัดนี้</p>`;
+      }
+    } catch (e) {
+      console.warn("⚠️ ไม่สามารถดึงข่าวได้:", e);
+    }
+
+    html += `<br><small>🕓 ข้อมูลจาก WeatherAPI + DDC + Google News (อัปเดตทุกวัน ~02:00 น.)</small>`;
+    output.innerHTML = html;
 
   } catch (err) {
     console.error(err);
@@ -142,28 +224,9 @@ async function getData() {
   }
 }
 
+// 🔹 สีข้อความตามระดับความเสี่ยง
 function riskColor(level) {
   return { very_high: "red", high: "darkorange", medium: "goldenrod", low: "green" }[level];
-}
-
-// ===================== ดึงข่าวท้องถิ่น =====================
-async function loadLocalNews(provinceTH) {
-  const newsBox = document.getElementById("news");
-  if (!newsBox) return;
-  newsBox.innerHTML = "📰 กำลังโหลดข่าว...";
-  try {
-    const res = await fetch(`http://127.0.0.1:5000/news/${provinceTH}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-
-    newsBox.innerHTML = data.map(n => `
-      <div style="margin-bottom:10px">
-        <a href="${n.link}" target="_blank" style="font-weight:bold;color:#2563eb">${n.title}</a>
-        <p>${n.summary}</p>
-      </div>`).join("") || "ไม่มีข่าวล่าสุด";
-  } catch (err) {
-    newsBox.innerHTML = `❌ ไม่สามารถโหลดข่าวได้ (${err.message})`;
-  }
 }
 
 window.onload = loadAccidentData;

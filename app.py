@@ -1,11 +1,12 @@
 # ===============================================
-# app.py — Flask API สำหรับข้อมูลอุบัติเหตุ + ข่าวท้องถิ่น
+# app.py — Flask API สำหรับรวมข้อมูลอุบัติเหตุรายปี/เดือน
+# และข่าวจังหวัด (Web Scraping + NLP Summarization)
 # ===============================================
 from flask import Flask, jsonify
 from flask_cors import CORS
 import pandas as pd
 import time, os, re
-from fetch_news import fetch_local_news  # ✅ เพิ่มส่วนเชื่อมข่าว
+from fetch_news import fetch_local_news   # ✅ นำเข้าก่อนรัน Flask
 
 app = Flask(__name__)
 CORS(app)
@@ -81,19 +82,15 @@ def fetch_accident_data():
     df_year = pd.read_excel(yearly_file)
     df_month = pd.read_excel(monthly_file)
 
-    # หา column จังหวัด
     col_prov_y = [c for c in df_year.columns if "รหัส" in str(c) or "จังหวัด" in str(c)][0]
     col_prov_m = [c for c in df_month.columns if "รหัส" in str(c) or "จังหวัด" in str(c)][0]
 
-    # แปลงรหัสเป็นตัวเลข
     df_year[col_prov_y] = pd.to_numeric(df_year[col_prov_y], errors="coerce").fillna(0).astype(int)
     df_month[col_prov_m] = pd.to_numeric(df_month[col_prov_m], errors="coerce").fillna(0).astype(int)
 
-    # Map ชื่อจังหวัด
     df_year["province"] = df_year[col_prov_y].map(province_code_map)
     df_month["province"] = df_month[col_prov_m].map(province_code_map)
 
-    # รวมรายปี
     col_total_y = [c for c in df_year.columns if "รวม" in str(c)][0]
     yearly_data = {}
     for _, row in df_year.iterrows():
@@ -101,7 +98,6 @@ def fetch_accident_data():
         if prov:
             yearly_data[prov] = int(row[col_total_y])
 
-    # รวมรายเดือน
     month_col_map = {}
     for col in df_month.columns:
         cleaned = clean_month_name(str(col))
@@ -119,25 +115,19 @@ def fetch_accident_data():
                 val = row[col_name]
                 monthly_data[prov][m] = int(val) if not pd.isna(val) else 0
 
-    # รวมทั้งหมด
     combined = {}
     for prov in province_code_map.values():
         total = yearly_data.get(prov, 0)
         months = monthly_data.get(prov, {})
         avg = round(sum(months.values()) / len(months), 2) if months else 0
-
-        combined[prov] = {
-            "total": total,
-            "monthly": months,
-            "average": avg
-        }
+        combined[prov] = {"total": total, "monthly": months, "average": avg}
 
     print(f"\n✅ โหลดข้อมูลสำเร็จ {len(combined)} จังหวัด")
     return combined
 
 
 # ==========================
-# 🔥 API
+# 🔥 API: อุบัติเหตุ
 # ==========================
 @app.route("/accident_data")
 def accident_data():
@@ -154,23 +144,21 @@ def accident_data():
         cache_data = data
         cache_timestamp = now
         return jsonify(data)
-
     except Exception as e:
         print("❌ Error:", e)
         return jsonify({"error": str(e)}), 500
 
 
 # ==========================
-# 📰 ดึงข่าวท้องถิ่น
+# 📰 API: ข่าวจังหวัด (NLP)
 # ==========================
 @app.route("/news/<province>")
-def news(province):
-    """ดึงข่าวท้องถิ่นของจังหวัดนั้น ๆ"""
+def get_news(province):
+    """API ดึงข่าวท้องถิ่น (Web Scraping + Summarization)"""
     try:
-        news_data = fetch_local_news(province)
-        return jsonify(news_data)
+        news = fetch_local_news(province)
+        return jsonify(news)
     except Exception as e:
-        print("❌ Error (news):", e)
         return jsonify({"error": str(e)}), 500
 
 
@@ -178,10 +166,9 @@ def news(province):
 # 🚀 Run Flask
 # ==========================
 if __name__ == "__main__":
-    print("🚀 Flask server started (Yearly + Monthly + News)")
+    print("🚀 Flask server started (Yearly + Monthly + Risk + News)")
     try:
         preview = fetch_accident_data()
-        print(f"\n✅ ตัวอย่างจังหวัด 3 แรก:")
         for k, v in list(preview.items())[:3]:
             jan_val = v["monthly"].get("ม.ค", "-")
             print(f"  {k}: รวม {v['total']} คน, มกราคม {jan_val} คน, ค่าเฉลี่ย {v['average']} คน/เดือน")
