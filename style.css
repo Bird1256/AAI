@@ -1,5 +1,5 @@
 /* =========================================
-   STYLE.CSS — Modern Weather Risk Dashboard
+   STYLE.CSS — Modern Weather Risk Dashboard (Autocomplete Edition)
    ========================================= */
 
 body {
@@ -28,22 +28,34 @@ header p {
 }
 
 /* ---------------- INPUT ---------------- */
-input {
+input[list] {
   padding: 10px 14px;
   font-size: 16px;
   border: 1.8px solid #93c5fd;
   border-radius: 12px;
-  width: 260px;
-  transition: 0.2s;
+  width: 280px;
+  transition: 0.25s;
   background-color: #f8fafc;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
-input:focus {
+
+input[list]:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
   outline: none;
 }
 
+input[list]::placeholder {
+  color: #94a3b8;
+}
+
+/* ทำให้ input เวลา hover มีความรู้สึก interactive */
+input[list]:hover {
+  background-color: #f1f5f9;
+  transform: scale(1.02);
+}
+
+/* ---------------- BUTTON ---------------- */
 button {
   padding: 10px 20px;
   margin-left: 10px;
@@ -175,4 +187,11 @@ footer {
   margin-top: 50px;
   color: #64748b;
   font-size: 13px;
+}
+
+/* ================= CUSTOM DATALIST ================= */
+/* ⚠️ หมายเหตุ: Browser ส่วนใหญ่ไม่รองรับ datalist styling เต็มรูปแบบ
+   แต่เราสามารถเพิ่มฟิลลิ่งให้ input ดู “interactive” เมื่อเปิด dropdown */
+::-webkit-calendar-picker-indicator {
+  display: none !important;
 }
